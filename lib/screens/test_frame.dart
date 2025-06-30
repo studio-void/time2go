@@ -16,7 +16,7 @@ class TestFrame extends StatefulWidget {
 class _TestFrameState extends State<TestFrame> {
   final _googleSignIn = GoogleSignIn(
     scopes: <String>[calendar.CalendarApi.calendarScope],
-    serverClientId: dotenv.env['GOOGLE_CLIENT_ID']!,
+    serverClientId: dotenv.env['GOOGLE_CLIENT_ID_ANDROID']!,
   );
 
   // GoogleSignInAccount? _currentUser;
