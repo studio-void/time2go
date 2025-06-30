@@ -23,33 +23,31 @@ class _TestFrameState extends State<TestFrame> {
   late var httpClient;
 
   void _handleSignIn() async {
-    _googleSignIn
-        .signIn()
-        .then((GoogleSignInAccount? account) {
-          if (account == null) {
-            // User cancelled the sign-in
-            return;
-          }
-          print("Trying to get Google account...");
-          _getGoogleAccount()
-              .then((_) {
-                // Successfully signed in and authenticated
-                print('Signed in as: ${account.displayName}');
-                print(
-                  'Access Token: ${httpClient.credentials.accessToken.data}',
-                );
-              })
-              .catchError((error) {
-                print('Error getting Google account: $error');
-              });
-        })
-        .catchError((error) {
-          print('Sign-in failed: $error');
-        });
+    print("Starting Google Sign-In...");
+    try {
+      final account = await _googleSignIn.signIn();
+
+      if (account == null) {
+        print("Sign-in cancelled by user.");
+        return;
+      }
+
+      print("Trying to get Google account...");
+      await _getGoogleAccount();
+
+      print('Signed in as: ${account.displayName}');
+      print('Access Token: ${httpClient.credentials.accessToken.data}');
+    } catch (error) {
+      print('Sign-in failed: $error');
+    }
   }
 
   Future<void> _getGoogleAccount() async {
-    httpClient = (await _googleSignIn.authenticatedClient())!;
+    final client = await _googleSignIn.authenticatedClient();
+    if (client == null) {
+      throw Exception("Failed to get authenticated client.");
+    }
+    httpClient = client;
   }
 
   @override
