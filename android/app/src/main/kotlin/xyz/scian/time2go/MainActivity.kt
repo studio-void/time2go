@@ -1,4 +1,4 @@
-package com.example.time2go
+package xyz.scian.time2go
 
 import io.flutter.embedding.android.FlutterActivity
 
