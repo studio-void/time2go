@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:time2go/screens/home_screen.dart';
+import 'package:time2go/theme/time2go_theme.dart';
 
 void main() {
   runApp(const Time2GoApp());
@@ -13,8 +14,20 @@ class Time2GoApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.light,
+        ),
+        extensions: [Time2GoTheme.light],
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+        extensions: [Time2GoTheme.dark],
+      ),
+      themeMode: ThemeMode.light,
       home: const HomeScreen(),
     );
   }
