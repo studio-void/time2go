@@ -123,11 +123,22 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                 final endHour = (endY / hourRowHeight).clamp(0, 23.0).round();
                 final hour1 = startHour < endHour ? startHour : endHour;
                 final hour2 = startHour < endHour ? endHour : startHour;
+                final newStart = hour1;
+                final newEnd = hour2 + 1;
                 setState(() {
+                  // 겹치는 기존 블록 삭제
+                  schedules.removeWhere((s) {
+                    if (s['day'] != dragDayIdx) return false;
+                    final sStart = (s['start'] as TimeOfDay).hour;
+                    final sEnd = (s['end'] as TimeOfDay).hour;
+                    // 겹치는지 확인
+                    return sEnd > newStart && sStart < newEnd;
+                  });
+                  // 새 블록 추가
                   schedules.add({
                     'day': dragDayIdx,
-                    'start': TimeOfDay(hour: hour1, minute: 0),
-                    'end': TimeOfDay(hour: hour2 + 1, minute: 0),
+                    'start': TimeOfDay(hour: newStart, minute: 0),
+                    'end': TimeOfDay(hour: newEnd, minute: 0),
                     'title': '새 일정',
                   });
                   dragStart = null;
