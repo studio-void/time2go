@@ -135,12 +135,10 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                     }
                     final sStart = (s['start'] as TimeOfDay).hour;
                     final sEnd = (s['end'] as TimeOfDay).hour;
-                    // 겹치지 않으면 그대로
                     if (sEnd <= newStart || sStart >= newEnd) {
                       newSchedules.add(s);
                       continue;
                     }
-                    // 앞부분 남음
                     if (sStart < newStart) {
                       newSchedules.add({
                         'day': dragDayIdx,
@@ -149,7 +147,6 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                         'title': s['title'],
                       });
                     }
-                    // 뒷부분 남음
                     if (sEnd > newEnd) {
                       newSchedules.add({
                         'day': dragDayIdx,
@@ -158,9 +155,7 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                         'title': s['title'],
                       });
                     }
-                    // 완전히 겹치면 아무것도 안함(삭제)
                   }
-                  // 새 블록 추가
                   newSchedules.add({
                     'day': dragDayIdx,
                     'start': TimeOfDay(hour: newStart, minute: 0),
@@ -182,7 +177,6 @@ class _TimetableWidgetState extends State<TimetableWidget> {
             },
             child: Stack(
               children: [
-                // 표 그리기 (둥근 border)
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: gridColor, width: 1),
@@ -210,7 +204,6 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                     ),
                   ),
                 ),
-                // 시간 라벨(격자선 위)
                 for (int i = 0; i < 24; i++)
                   Positioned(
                     left: 0,
@@ -231,7 +224,6 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                       ),
                     ),
                   ),
-                // 일정 블록 배치
                 for (int idx = 0; idx < schedules.length; idx++)
                   (() {
                     final s = schedules[idx];
@@ -261,7 +253,6 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                       ),
                     );
                   })(),
-                // 드래그 영역 표시
                 if (dragStart != null && dragEnd != null && dragDayIdx != null)
                   (() {
                     final startY = dragStart!.dy - yOffset;
@@ -304,7 +295,7 @@ class _TimetableWidgetState extends State<TimetableWidget> {
     Color gridColor,
   ) {
     final List<TableRow> rows = [];
-    // 요일 타이틀 row
+
     rows.add(
       TableRow(
         children: [
@@ -331,7 +322,7 @@ class _TimetableWidgetState extends State<TimetableWidget> {
         ],
       ),
     );
-    // 시간 row (0~23, 24~25시 경계선까지)
+
     for (int h = 0; h < 24; h++) {
       rows.add(
         TableRow(
