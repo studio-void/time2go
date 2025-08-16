@@ -31,20 +31,20 @@ class _TimetableWidgetState extends State<TimetableWidget> {
     },
     {
       'day': 1,
-      'start': const TimeOfDay(hour: 8, minute: 30),
+      'start': const TimeOfDay(hour: 8, minute: 0),
       'end': const TimeOfDay(hour: 10, minute: 0),
       'title': '영어',
     },
     {
       'day': 3,
       'start': const TimeOfDay(hour: 15, minute: 0),
-      'end': const TimeOfDay(hour: 17, minute: 30),
+      'end': const TimeOfDay(hour: 17, minute: 0),
       'title': '음악',
     },
     {
       'day': 0,
       'start': const TimeOfDay(hour: 12, minute: 0),
-      'end': const TimeOfDay(hour: 13, minute: 30),
+      'end': const TimeOfDay(hour: 13, minute: 0),
       'title': '체육',
     },
     {
@@ -126,21 +126,48 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                 final newStart = hour1;
                 final newEnd = hour2 + 1;
                 setState(() {
-                  // 겹치는 기존 블록 삭제
-                  schedules.removeWhere((s) {
-                    if (s['day'] != dragDayIdx) return false;
+                  // 기존 블록 분할/삭제 처리
+                  List<Map<String, dynamic>> newSchedules = [];
+                  for (final s in schedules) {
+                    if (s['day'] != dragDayIdx) {
+                      newSchedules.add(s);
+                      continue;
+                    }
                     final sStart = (s['start'] as TimeOfDay).hour;
                     final sEnd = (s['end'] as TimeOfDay).hour;
-                    // 겹치는지 확인
-                    return sEnd > newStart && sStart < newEnd;
-                  });
+                    // 겹치지 않으면 그대로
+                    if (sEnd <= newStart || sStart >= newEnd) {
+                      newSchedules.add(s);
+                      continue;
+                    }
+                    // 앞부분 남음
+                    if (sStart < newStart) {
+                      newSchedules.add({
+                        'day': dragDayIdx,
+                        'start': TimeOfDay(hour: sStart, minute: 0),
+                        'end': TimeOfDay(hour: newStart, minute: 0),
+                        'title': s['title'],
+                      });
+                    }
+                    // 뒷부분 남음
+                    if (sEnd > newEnd) {
+                      newSchedules.add({
+                        'day': dragDayIdx,
+                        'start': TimeOfDay(hour: newEnd, minute: 0),
+                        'end': TimeOfDay(hour: sEnd, minute: 0),
+                        'title': s['title'],
+                      });
+                    }
+                    // 완전히 겹치면 아무것도 안함(삭제)
+                  }
                   // 새 블록 추가
-                  schedules.add({
+                  newSchedules.add({
                     'day': dragDayIdx,
                     'start': TimeOfDay(hour: newStart, minute: 0),
                     'end': TimeOfDay(hour: newEnd, minute: 0),
                     'title': '새 일정',
                   });
+                  schedules = newSchedules;
                   dragStart = null;
                   dragEnd = null;
                   dragDayIdx = null;
