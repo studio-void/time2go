@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'schedule_block.dart';
 import 'package:time2go/theme/time2go_theme.dart';
+import 'schedule_block.dart';
+import '../../viewmodel/timetable_viewmodel.dart';
 
 class TimetableWidget extends StatefulWidget {
   const TimetableWidget({super.key});
@@ -10,66 +11,26 @@ class TimetableWidget extends StatefulWidget {
 }
 
 class _TimetableWidgetState extends State<TimetableWidget> {
-  List<Map<String, dynamic>> schedules = [
-    {
-      'day': 0,
-      'start': const TimeOfDay(hour: 9, minute: 0),
-      'end': const TimeOfDay(hour: 11, minute: 0),
-      'title': '수학',
-    },
-    {
-      'day': 2,
-      'start': const TimeOfDay(hour: 13, minute: 0),
-      'end': const TimeOfDay(hour: 15, minute: 0),
-      'title': '과학 실험',
-    },
-    {
-      'day': 4,
-      'start': const TimeOfDay(hour: 18, minute: 0),
-      'end': const TimeOfDay(hour: 20, minute: 0),
-      'title': '동아리',
-    },
-    {
-      'day': 1,
-      'start': const TimeOfDay(hour: 8, minute: 0),
-      'end': const TimeOfDay(hour: 10, minute: 0),
-      'title': '영어',
-    },
-    {
-      'day': 3,
-      'start': const TimeOfDay(hour: 15, minute: 0),
-      'end': const TimeOfDay(hour: 17, minute: 0),
-      'title': '음악',
-    },
-    {
-      'day': 0,
-      'start': const TimeOfDay(hour: 12, minute: 0),
-      'end': const TimeOfDay(hour: 13, minute: 0),
-      'title': '체육',
-    },
-    {
-      'day': 2,
-      'start': const TimeOfDay(hour: 17, minute: 0),
-      'end': const TimeOfDay(hour: 18, minute: 0),
-      'title': '미술',
-    },
-    {
-      'day': 1,
-      'start': const TimeOfDay(hour: 20, minute: 0),
-      'end': const TimeOfDay(hour: 22, minute: 0),
-      'title': '독서',
-    },
-    {
-      'day': 3,
-      'start': const TimeOfDay(hour: 10, minute: 0),
-      'end': const TimeOfDay(hour: 12, minute: 0),
-      'title': '프로그래밍',
-    },
-  ];
-
+  TimetableViewModel viewModel = TimetableViewModel();
   Offset? dragStart;
   Offset? dragEnd;
   int? dragDayIdx;
+
+  @override
+  void initState() {
+    super.initState();
+    viewModel.addListener(_onViewModelChanged);
+  }
+
+  @override
+  void dispose() {
+    viewModel.removeListener(_onViewModelChanged);
+    super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +45,7 @@ class _TimetableWidgetState extends State<TimetableWidget> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final schedules = viewModel.schedules;
           final tableHeight = constraints.maxHeight;
           final hourRowHeight = ((tableHeight - 40) / 24).toDouble();
           final tableWidth = constraints.maxWidth;
@@ -125,44 +87,13 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                 final hour2 = startHour < endHour ? endHour : startHour;
                 final newStart = hour1;
                 final newEnd = hour2 + 1;
+                viewModel.addOrSplitBlock(
+                  dragDayIdx!,
+                  newStart,
+                  newEnd,
+                  '새 일정',
+                );
                 setState(() {
-                  // 기존 블록 분할/삭제 처리
-                  List<Map<String, dynamic>> newSchedules = [];
-                  for (final s in schedules) {
-                    if (s['day'] != dragDayIdx) {
-                      newSchedules.add(s);
-                      continue;
-                    }
-                    final sStart = (s['start'] as TimeOfDay).hour;
-                    final sEnd = (s['end'] as TimeOfDay).hour;
-                    if (sEnd <= newStart || sStart >= newEnd) {
-                      newSchedules.add(s);
-                      continue;
-                    }
-                    if (sStart < newStart) {
-                      newSchedules.add({
-                        'day': dragDayIdx,
-                        'start': TimeOfDay(hour: sStart, minute: 0),
-                        'end': TimeOfDay(hour: newStart, minute: 0),
-                        'title': s['title'],
-                      });
-                    }
-                    if (sEnd > newEnd) {
-                      newSchedules.add({
-                        'day': dragDayIdx,
-                        'start': TimeOfDay(hour: newEnd, minute: 0),
-                        'end': TimeOfDay(hour: sEnd, minute: 0),
-                        'title': s['title'],
-                      });
-                    }
-                  }
-                  newSchedules.add({
-                    'day': dragDayIdx,
-                    'start': TimeOfDay(hour: newStart, minute: 0),
-                    'end': TimeOfDay(hour: newEnd, minute: 0),
-                    'title': '새 일정',
-                  });
-                  schedules = newSchedules;
                   dragStart = null;
                   dragEnd = null;
                   dragDayIdx = null;
@@ -227,9 +158,9 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                 for (int idx = 0; idx < schedules.length; idx++)
                   (() {
                     final s = schedules[idx];
-                    final dayIdx = s['day'] as int;
-                    final start = s['start'] as TimeOfDay;
-                    final end = s['end'] as TimeOfDay;
+                    final dayIdx = s.day;
+                    final start = s.start;
+                    final end = s.end;
                     final gridYOffset = yOffset;
                     final top =
                         gridYOffset +
@@ -246,7 +177,7 @@ class _TimetableWidgetState extends State<TimetableWidget> {
                       width: dayColWidth,
                       height: height,
                       child: ScheduleBlock(
-                        title: s['title'] as String,
+                        title: s.title,
                         start: start,
                         end: end,
                         color: color,

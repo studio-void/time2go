@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'timetable_widget.dart';
+import 'widgets/timetable_widget.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

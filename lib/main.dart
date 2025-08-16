@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:time2go/screens/home_screen.dart';
+import 'package:time2go/view/home_screen.dart';
 import 'package:time2go/theme/time2go_theme.dart';
 
 void main() {
