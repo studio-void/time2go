@@ -3,6 +3,7 @@ import 'package:time2go/model/firebase_store_helper.dart';
 import 'package:time2go/theme/time2go_theme.dart';
 import 'package:time2go/view/widgets/navigation_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -27,14 +28,18 @@ class HomeScreen extends StatelessWidget {
                 color: Time2GoTheme.of(context).foregroundColor,
               ),
             ),
+
             const SizedBox(height: 24),
+
             NavigationCard(
               icon: Icons.calendar_month_rounded,
               title: '시간표',
               subtitle: '나의 시간표를 확인하고 관리합니다',
               onTap: () => Navigator.of(context).pushNamed('/timetable'),
             ),
+
             const SizedBox(height: 12),
+
             NavigationCard(
               icon: Icons.meeting_room_rounded,
               title: '미트 찾기 혹은 생성',
@@ -52,6 +57,9 @@ class HomeScreen extends StatelessWidget {
                   builder: (ctx) {
                     return StatefulBuilder(
                       builder: (ctx, setState) {
+                        String formatDate(DateTime d) =>
+                            '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
                         return AlertDialog(
                           backgroundColor: theme.backgroundColor,
                           title: const Text('미트 입장'),
@@ -60,40 +68,85 @@ class HomeScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('미트 ID (필수)'),
+
                               const SizedBox(height: 6),
+
                               TextField(
                                 controller: idController,
                                 decoration: const InputDecoration(
                                   hintText: '예) cs-study-0901',
                                 ),
                               ),
-                              const SizedBox(height: 12),
+
+                              const SizedBox(height: 24),
+
                               const Text('시작 날짜 (7일간 범위로 계산)'),
+
                               const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      '${rangeStartLocal.year}-${rangeStartLocal.month.toString().padLeft(2, '0')}-${rangeStartLocal.day.toString().padLeft(2, '0')}',
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      final picked = await showDatePicker(
-                                        context: ctx,
-                                        initialDate: rangeStartLocal,
-                                        firstDate: DateTime(2000),
-                                        lastDate: DateTime(2100),
+
+                              InkWell(
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: ctx,
+                                    initialDate: rangeStartLocal,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2100),
+                                    builder: (pickerCtx, child) {
+                                      final base = Theme.of(pickerCtx);
+
+                                      return Theme(
+                                        data: base.copyWith(
+                                          colorScheme: ColorScheme.light(
+                                            primary: theme.foregroundColor,
+                                            onPrimary: theme.backgroundColor,
+                                            surface: theme.backgroundColor,
+                                            onSurface: theme.foregroundColor,
+                                          ),
+                                          textButtonTheme: TextButtonThemeData(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor:
+                                                  theme.foregroundColor,
+                                            ),
+                                          ),
+                                        ),
+                                        child: child!,
                                       );
-                                      if (picked != null) {
-                                        setState(
-                                          () => rangeStartLocal = picked,
-                                        );
-                                      }
                                     },
-                                    child: const Text('날짜 선택'),
+                                  );
+                                  if (picked != null) {
+                                    setState(() => rangeStartLocal = picked);
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 14,
                                   ),
-                                ],
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color:
+                                          Time2GoTheme.of(context).borderColor,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.calendar_month_rounded),
+
+                                      const SizedBox(width: 8),
+
+                                      Expanded(
+                                        child: Text(
+                                          formatDate(rangeStartLocal),
+                                          style: const TextStyle(fontSize: 16),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const Icon(Icons.expand_more_rounded),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -132,66 +185,120 @@ class HomeScreen extends StatelessWidget {
                       idResult.rangeStart.day,
                     ).toUtc();
 
-                // 2) Check Firestore for existing room
-                final db = FirebaseFirestore.instance;
-                final roomRef = db.collection('rooms').doc(meetId);
-                final snap = await roomRef.get();
+                // 2) Check if room exists via helper
+                final existing = await store.getRoomOnce(meetId);
 
-                if (snap.exists) {
+                // 2-1) Ask for display name (and title if creating)
+                final displayNameController = TextEditingController(text: '익명');
+                final titleController = TextEditingController(text: 'Title');
+
+                if (!context.mounted) return;
+                final result =
+                    await showDialog<({String displayName, String? title})>(
+                      context: context,
+                      builder: (ctx) {
+                        return AlertDialog(
+                          backgroundColor: theme.backgroundColor,
+                          title: Text(
+                            existing == null ? '입장 정보 입력' : '표시 이름 입력',
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('표시 이름'),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: displayNameController,
+                                decoration: const InputDecoration(
+                                  hintText: '예) 민수',
+                                ),
+                              ),
+                              if (existing == null) ...[
+                                const SizedBox(height: 16),
+                                const Text('제목 (새 미트 생성 시)'),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: titleController,
+                                  decoration: const InputDecoration(
+                                    hintText: '예) 스터디 미트',
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('취소'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                final name =
+                                    displayNameController.text.trim().isEmpty
+                                        ? '익명'
+                                        : displayNameController.text.trim();
+                                final title =
+                                    existing == null
+                                        ? (titleController.text.trim().isEmpty
+                                            ? 'Title'
+                                            : titleController.text.trim())
+                                        : null;
+                                Navigator.of(
+                                  ctx,
+                                ).pop((displayName: name, title: title));
+                              },
+                              child: const Text('확인'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                if (result == null) return;
+
+                // 3) Ensure room and join via helper (require authenticated user)
+                final user = FirebaseAuth.instance.currentUser;
+                if (user == null) {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('기존 미트를 불러옵니다.')),
+                    const SnackBar(
+                      content: Text('로그인이 필요해요. 구글 로그인 후 다시 시도해 주세요.'),
+                    ),
                   );
-                  Navigator.of(context).pushNamed('/meet', arguments: meetId);
                   return;
                 }
-
-                // 3) If not exists, ask for Title and create
-                final titleController = TextEditingController(text: 'Title');
-                if (!context.mounted) return;
-                final title = await showDialog<String>(
-                  context: context,
-                  builder:
-                      (ctx) => AlertDialog(
-                        backgroundColor: theme.backgroundColor,
-                        title: const Text('새 미트 생성'),
-                        content: TextField(
-                          controller: titleController,
-                          decoration: const InputDecoration(
-                            labelText: '제목',
-                            hintText: '예) 스터디 미트',
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            child: const Text('취소'),
-                          ),
-                          TextButton(
-                            onPressed:
-                                () => Navigator.of(ctx).pop(
-                                  titleController.text.trim().isEmpty
-                                      ? 'Title'
-                                      : titleController.text.trim(),
-                                ),
-                            child: const Text('생성'),
-                          ),
-                        ],
+                final uid = user.uid;
+                if (existing == null) {
+                  final outcome = await store.ensureRoomAndJoin(
+                    roomId: meetId,
+                    title: result.title!,
+                    rangeStartUtc: rangeStartUtc,
+                    uid: uid,
+                    displayName: result.displayName,
+                  );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        outcome.created ? '새 미트를 생성하고 입장했어요.' : '기존 미트에 입장했어요.',
                       ),
-                );
+                    ),
+                  );
+                } else {
+                  await store.joinRoom(
+                    roomId: meetId,
+                    uid: uid,
+                    displayName: result.displayName,
+                  );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('기존 미트에 입장했어요.')),
+                  );
+                }
 
-                if (title == null) return; // canceled
-
-                await roomRef.set({
-                  'title': title,
-                  'rangeStart': Timestamp.fromDate(rangeStartUtc),
-                  'createdAt': FieldValue.serverTimestamp(),
-                }, SetOptions(merge: true));
-
+                // 4) Navigate to meet screen
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('새 미트를 생성했어요.')));
                 Navigator.of(context).pushNamed('/meet', arguments: meetId);
               },
             ),

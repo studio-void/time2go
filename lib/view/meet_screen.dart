@@ -13,7 +13,8 @@ class MeetScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Time2GoTheme.of(context).backgroundColor,
         foregroundColor: Time2GoTheme.of(context).foregroundColor,
-        title: Text('Meet $meetId'),
+        title: Text(meetId ?? '강의실'),
+        centerTitle: false,
       ),
       body: const Center(child: Text('강의실 목록이 여기에 표시됩니다.')),
     );
