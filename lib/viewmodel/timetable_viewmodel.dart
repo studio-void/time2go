@@ -65,13 +65,13 @@ class TimetableViewModel extends ChangeNotifier {
 
   void addGoogleCalendarEvents(List<Map<String, dynamic>> events) {
     for (final event in events) {
-      // event: {day, startHour, endHour, title}
       final day = event['day'] as int;
       final startHour = event['startHour'] as int;
       final startMinute = event['startMinute'] as int;
       final endHour = event['endHour'] as int;
       final endMinute = event['endMinute'] as int;
       final title = event['title'] as String;
+
       _schedules.add(
         ScheduleModel(
           day: day,
@@ -81,6 +81,7 @@ class TimetableViewModel extends ChangeNotifier {
         ),
       );
     }
+
     notifyListeners();
   }
 
@@ -129,6 +130,7 @@ class TimetableViewModel extends ChangeNotifier {
       ),
     );
     _schedules = newList;
+
     notifyListeners();
   }
 }

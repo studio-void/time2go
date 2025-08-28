@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:time2go/theme/time2go_theme.dart';
 import 'package:time2go/view/widgets/schedule_block.dart';
 import 'package:time2go/viewmodel/timetable_viewmodel.dart';
@@ -33,15 +32,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
     GoogleSignInAccount? gUser = _googleSignIn.currentUser;
     gUser ??= await _googleSignIn.signInSilently();
     gUser ??= await _googleSignIn.signIn();
-    return gUser; // may be null if user cancels
+    return gUser;
   }
 
   Future<User?> _signInWithGoogleAndFirebase() async {
-    // Always ensure we have a Google account first (needed for Calendar API)
     final gUser = await _ensureGoogleAccount();
     if (gUser == null) return null; // user cancelled
 
-    // If already signed in to Firebase, reuse it; otherwise link Google to Firebase
     final current = FirebaseAuth.instance.currentUser;
     if (current != null) {
       return current;
@@ -58,42 +55,40 @@ class _TimetableScreenState extends State<TimetableScreen> {
     return userCred.user;
   }
 
-  // 구글 캘린더에서 일정을 가져와 timetable에 추가하는 함수 (실제 구현)
   Future<void> _importGoogleCalendar() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      // 1) Ensure Google Sign-In & FirebaseAuth session
       final user = await _signInWithGoogleAndFirebase();
       if (user == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('로그인이 취소되었어요.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('로그인이 취소되었어요.'),
+            backgroundColor: Time2GoTheme.of(context).foregroundColor,
+          ),
+        );
         return;
       }
 
-      // 2) Build an authenticated client for googleapis using the Google account
       final account = await _ensureGoogleAccount();
       if (account == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('구글 로그인이 필요해요.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('구글 로그인이 필요해요.'),
+            backgroundColor: Time2GoTheme.of(context).foregroundColor,
+          ),
+        );
         return;
       }
       final authHeaders = await account.authHeaders;
       final authClient = _GoogleAuthClient(authHeaders);
 
       try {
-        // 3) Call Calendar API
         final calendarApi = calendar.CalendarApi(authClient);
-
         final calendarList = await calendarApi.calendarList.list();
-        for (var cal in calendarList.items ?? []) {
-          debugPrint('캘린더 이름=${cal.summary}, id=${cal.id}');
-        }
 
         final List<calendar.Event> allEvents = [];
         for (final cal in calendarList.items ?? []) {
@@ -109,12 +104,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
           allEvents.addAll(events.items ?? []);
         }
 
+        // 하루종일 이벤트 거르기
         final List<calendar.Event> filtered = [
           for (final e in allEvents)
             if (e.start?.dateTime != null && e.end?.dateTime != null) e,
         ];
 
-        // 4) Convert to timetable format (Mon~Fri)
         final List<Map<String, dynamic>> events = [];
         for (final item in filtered) {
           final DateTime? startDT = item.start?.dateTime?.toLocal();
@@ -135,12 +130,14 @@ class _TimetableScreenState extends State<TimetableScreen> {
           });
         }
 
-        // 5) Update view model
         viewModel.addGoogleCalendarEvents(events);
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('구글 캘린더에서 ${events.length}건을 가져왔어요.')),
+          SnackBar(
+            content: Text('구글 캘린더에서 ${events.length}건을 가져왔어요.'),
+            backgroundColor: Time2GoTheme.of(context).foregroundColor,
+          ),
         );
       } finally {
         authClient.close();
@@ -148,9 +145,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
     } catch (e) {
       debugPrint('구글 캘린더 가져오기 실패: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('구글 캘린더 가져오기 실패: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('구글 캘린더 가져오기 실패: $e'),
+          backgroundColor: Time2GoTheme.of(context).foregroundColor,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -179,7 +179,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   List<TableRow> _buildTableRows(
     List<String> days,
     double hourRowHeight,
-    ColorScheme colorScheme,
+    Time2GoTheme time2goTheme,
     TextTheme textTheme,
     Color gridColor,
   ) {
@@ -198,12 +198,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   style:
                       textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
+                        color: time2goTheme.foregroundColor,
                       ) ??
                       TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: colorScheme.primary,
+                        color: time2goTheme.foregroundColor,
                       ),
                 ),
               ),
@@ -236,7 +236,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final gridColor = time2goTheme.gridColor;
 
     return Scaffold(
+      backgroundColor: Time2GoTheme.of(context).backgroundColor,
       appBar: AppBar(
+        backgroundColor: Time2GoTheme.of(context).backgroundColor,
+        foregroundColor: Time2GoTheme.of(context).foregroundColor,
         title: const Text('Time2Go'),
         actions: [
           IconButton(
@@ -322,7 +325,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
                         decoration: BoxDecoration(
                           border: Border.all(color: gridColor, width: 1),
                           borderRadius: BorderRadius.circular(16),
-                          color: colorScheme.surface,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
@@ -338,7 +340,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                             children: _buildTableRows(
                               days,
                               hourRowHeight,
-                              colorScheme,
+                              time2goTheme,
                               textTheme,
                               gridColor,
                             ),
@@ -434,7 +436,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
           if (_isLoading)
             Container(
               color: Colors.black26,
-              child: const Center(child: CircularProgressIndicator()),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Time2GoTheme.of(context).foregroundColor,
+                ),
+              ),
             ),
         ],
       ),
@@ -442,7 +448,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 }
 
-/// Adds Google auth headers to every request. Needed by `googleapis` package.
 class _GoogleAuthClient extends http.BaseClient {
   final Map<String, String> _headers;
   final http.Client _inner = http.Client();

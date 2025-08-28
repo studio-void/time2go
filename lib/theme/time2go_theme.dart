@@ -3,8 +3,15 @@ import 'package:flutter/material.dart';
 class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
   final List<Color> blockColors;
   final Color gridColor;
+  final Color backgroundColor;
+  final Color foregroundColor;
 
-  const Time2GoTheme({required this.blockColors, required this.gridColor});
+  const Time2GoTheme({
+    required this.blockColors,
+    required this.gridColor,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
 
   static Time2GoTheme of(BuildContext context) {
     final ext = Theme.of(context).extension<Time2GoTheme>();
@@ -21,16 +28,25 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
           Color(0xFF80CBC4),
         ],
         gridColor: Color.fromARGB(80, 43, 43, 43),
+        backgroundColor: Color(0xFFFFFFFF),
+        foregroundColor: Color(0xFF000000),
       );
     }
     return ext;
   }
 
   @override
-  Time2GoTheme copyWith({List<Color>? blockColors, Color? gridColor}) {
+  Time2GoTheme copyWith({
+    List<Color>? blockColors,
+    Color? gridColor,
+    Color? backgroundColor,
+    Color? foregroundColor,
+  }) {
     return Time2GoTheme(
       blockColors: blockColors ?? this.blockColors,
       gridColor: gridColor ?? this.gridColor,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      foregroundColor: foregroundColor ?? this.foregroundColor,
     );
   }
 
@@ -45,21 +61,29 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
             blockColors[i],
       ),
       gridColor: Color.lerp(gridColor, other.gridColor, t) ?? gridColor,
+      backgroundColor:
+          Color.lerp(backgroundColor, other.backgroundColor, t) ??
+          backgroundColor,
+      foregroundColor:
+          Color.lerp(foregroundColor, other.foregroundColor, t) ??
+          foregroundColor,
     );
   }
 
   static const light = Time2GoTheme(
     blockColors: [
-      Color(0xFF90CAF9),
-      Color(0xFFA5D6A7),
-      Color(0xFFFFF59D),
-      Color(0xFFFFAB91),
-      Color(0xFFCE93D8),
-      Color(0xFFB0BEC5),
-      Color(0xFFFFCC80),
-      Color(0xFF80CBC4),
+      Color(0xFF64B5F6),
+      Color(0xFF81C784),
+      Color(0xFFFFEE58),
+      Color(0xFFFF8A65),
+      Color(0xFFBA68C8),
+      Color(0xFF90A4AE),
+      Color(0xFFFFB74D),
+      Color(0xFF4DB6AC),
     ],
     gridColor: Color.fromARGB(40, 0, 0, 0),
+    backgroundColor: Color(0xFFFFFFFF),
+    foregroundColor: Color(0xFF000000),
   );
 
   static const dark = Time2GoTheme(
@@ -74,5 +98,7 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
       Color(0xFF00897B),
     ],
     gridColor: Color.fromARGB(40, 255, 255, 255),
+    backgroundColor: Color(0xFF202020),
+    foregroundColor: Color(0xFFFFFFFF),
   );
 }
