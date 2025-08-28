@@ -5,6 +5,7 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
   final Color gridColor;
   final Color backgroundColor;
   final Color foregroundColor;
+  final Color cardBorderColor = const Color(0xFFBDBDBD);
 
   const Time2GoTheme({
     required this.blockColors,

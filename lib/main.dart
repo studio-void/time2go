@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:time2go/firebase_options.dart';
+import 'package:time2go/view/home_screen.dart';
+import 'package:time2go/view/room_list.dart';
 import 'package:time2go/view/timetable_screen.dart';
 import 'package:time2go/theme/time2go_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,23 +18,30 @@ class Time2GoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Time2Go',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
+        fontFamily: 'Pretendard',
+        textTheme: ThemeData.light().textTheme.apply(
+          bodyColor: Time2GoTheme.light.foregroundColor,
+          displayColor: Time2GoTheme.light.foregroundColor,
         ),
         extensions: [Time2GoTheme.light],
       ),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
+        fontFamily: 'Pretendard',
+        textTheme: ThemeData.dark().textTheme.apply(
+          bodyColor: Time2GoTheme.dark.foregroundColor,
+          displayColor: Time2GoTheme.dark.foregroundColor,
         ),
         extensions: [Time2GoTheme.dark],
       ),
       themeMode: ThemeMode.light,
-      home: const TimetableScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/timetable': (context) => const TimetableScreen(),
+        '/room_list': (context) => const RoomListScreen(),
+      },
     );
   }
 }
