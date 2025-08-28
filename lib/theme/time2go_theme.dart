@@ -5,13 +5,14 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
   final Color gridColor;
   final Color backgroundColor;
   final Color foregroundColor;
-  final Color cardBorderColor = const Color(0xFFBDBDBD);
+  final Color borderColor;
 
   const Time2GoTheme({
     required this.blockColors,
     required this.gridColor,
     required this.backgroundColor,
     required this.foregroundColor,
+    required this.borderColor,
   });
 
   static Time2GoTheme of(BuildContext context) {
@@ -31,6 +32,7 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
         gridColor: Color.fromARGB(80, 43, 43, 43),
         backgroundColor: Color(0xFFFFFFFF),
         foregroundColor: Color(0xFF000000),
+        borderColor: Color(0xFFBDBDBD),
       );
     }
     return ext;
@@ -42,12 +44,14 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
     Color? gridColor,
     Color? backgroundColor,
     Color? foregroundColor,
+    Color? borderColor,
   }) {
     return Time2GoTheme(
       blockColors: blockColors ?? this.blockColors,
       gridColor: gridColor ?? this.gridColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       foregroundColor: foregroundColor ?? this.foregroundColor,
+      borderColor: borderColor ?? this.borderColor,
     );
   }
 
@@ -68,6 +72,7 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
       foregroundColor:
           Color.lerp(foregroundColor, other.foregroundColor, t) ??
           foregroundColor,
+      borderColor: Color.lerp(borderColor, other.borderColor, t) ?? borderColor,
     );
   }
 
@@ -85,6 +90,7 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
     gridColor: Color.fromARGB(40, 0, 0, 0),
     backgroundColor: Color(0xFFFFFFFF),
     foregroundColor: Color(0xFF000000),
+    borderColor: Color(0xFFBDBDBD),
   );
 
   static const dark = Time2GoTheme(
@@ -101,5 +107,6 @@ class Time2GoTheme extends ThemeExtension<Time2GoTheme> {
     gridColor: Color.fromARGB(40, 255, 255, 255),
     backgroundColor: Color(0xFF202020),
     foregroundColor: Color(0xFFFFFFFF),
+    borderColor: Color.fromARGB(255, 120, 120, 120),
   );
 }
