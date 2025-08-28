@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:time2go/view/home_screen.dart';
+import 'package:time2go/firebase_options.dart';
+import 'package:time2go/view/timetable_screen.dart';
 import 'package:time2go/theme/time2go_theme.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const Time2GoApp());
 }
 
@@ -28,7 +32,7 @@ class Time2GoApp extends StatelessWidget {
         extensions: [Time2GoTheme.dark],
       ),
       themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      home: const TimetableScreen(),
     );
   }
 }

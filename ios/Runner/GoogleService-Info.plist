@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>339127506038-5mle1fgisjsqosb92ubica89ghaktp4t.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.339127506038-5mle1fgisjsqosb92ubica89ghaktp4t</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDKAqy6O6Jakh-I4ygH6ZdCTb3AdlQcyDE</string>
+	<key>GCM_SENDER_ID</key>
+	<string>339127506038</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.time2go</string>
+	<key>PROJECT_ID</key>
+	<string>time2go-b1d2a</string>
+	<key>STORAGE_BUCKET</key>
+	<string>time2go-b1d2a.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:339127506038:ios:b0e82e35936cedaa677b57</string>
+</dict>
+</plist>
