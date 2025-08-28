@@ -100,6 +100,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
             singleEvents: true,
             orderBy: 'startTime',
             timeMin: DateTime.now().toUtc(),
+            timeMax: DateTime.now().toUtc().add(const Duration(days: 7)),
           );
           allEvents.addAll(events.items ?? []);
         }
