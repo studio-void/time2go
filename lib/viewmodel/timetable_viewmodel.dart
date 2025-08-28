@@ -231,7 +231,7 @@ class TimetableViewModel extends ChangeNotifier {
             ),
           );
         }
-        addGoogleCalendarEvents(events);
+        await addGoogleCalendarEvents(events);
         showSnack?.call('구글 일정 ${events.length}건 추가');
       } finally {
         authClient.close();
@@ -310,9 +310,28 @@ class TimetableViewModel extends ChangeNotifier {
 
   List<ScheduleModel> get schedules => List.unmodifiable(_schedules);
 
-  void addGoogleCalendarEvents(List<ScheduleModel> events) {
-    _schedules.addAll(events);
+  Future<void> addGoogleCalendarEvents(List<ScheduleModel> events) async {
+    // 1) UI 갱신 (growable 보장)
+    _schedules = List.of(_schedules)..addAll(events);
     notifyListeners();
+
+    // 2) 비동기 저장 (구글 캘린더에서 가져온 항목으로 표시)
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      () async {
+        try {
+          await _ensureMemberExists(user.uid);
+          for (final e in events) {
+            await _persistBlock(e, state: 'yes', source: 'import-google');
+          }
+          showSnack?.call('구글 일정 DB 저장 완료');
+        } catch (e) {
+          showSnack?.call('구글 일정 저장 실패: $e');
+        }
+      }();
+    } else {
+      showSnack?.call('로그인되어 있지 않아 구글 일정이 로컬에만 반영됐어요');
+    }
   }
 
   /// Adds a new user-created block into the grid, splitting overlaps.
@@ -373,18 +392,25 @@ class TimetableViewModel extends ChangeNotifier {
     // Persist to Firestore (best-effort, keep UI responsive)
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final startDT = _dateForDayHour(day, newStart, minute: 0);
-      final endDT = _dateForDayHour(day, newEnd, minute: 0);
-      _store.addMemberBlock(
-        uid: user.uid,
-        start: startDT,
-        end: endDT,
-        title: title,
-        colorHex: _colorToHex(pickedColor),
-        state: 'yes',
-        source: 'manual',
-      );
-      showSnack?.call('저장 완료: $title');
+      () async {
+        try {
+          await _ensureMemberExists(user.uid);
+          final startDT = _dateForDayHour(day, newStart, minute: 0);
+          final endDT = _dateForDayHour(day, newEnd, minute: 0);
+          await _store.addMemberBlock(
+            uid: user.uid,
+            start: startDT,
+            end: endDT,
+            title: title,
+            colorHex: _colorToHex(pickedColor),
+            state: 'yes',
+            source: 'manual',
+          );
+          showSnack?.call('저장 완료: $title');
+        } catch (e) {
+          showSnack?.call('저장 실패: $e');
+        }
+      }();
     } else {
       showSnack?.call('로그인되어 있지 않아 로컬에서만 추가되었어요');
     }
@@ -393,21 +419,24 @@ class TimetableViewModel extends ChangeNotifier {
   }
 
   /// Delete a schedule by index. If out of range, no-op.
-  void deleteSchedule(int index) {
+  Future<void> deleteSchedule(int index) async {
     if (index < 0 || index >= _schedules.length) {
       showSnack?.call('삭제 실패: 잘못된 인덱스');
       return;
     }
     final removed = _schedules[index];
-    _schedules.removeAt(index);
+    _schedules = List.of(_schedules)..removeAt(index);
     notifyListeners();
     showSnack?.call('일정 삭제: ${removed.title}');
-
-    _persistBlock(removed, state: 'deleted', source: 'manual-delete');
+    try {
+      await _persistBlock(removed, state: 'deleted', source: 'manual-delete');
+    } catch (e) {
+      showSnack?.call('DB 반영 실패: $e');
+    }
   }
 
   /// Recolor a schedule and persist.
-  void recolorSchedule(int index, Color newColor) {
+  Future<void> recolorSchedule(int index, Color newColor) async {
     if (index < 0 || index >= _schedules.length) {
       showSnack?.call('색 변경 실패: 잘못된 인덱스');
       return;
@@ -420,16 +449,20 @@ class TimetableViewModel extends ChangeNotifier {
       title: s.title,
       color: newColor,
     );
+    _schedules = List.of(_schedules);
     _schedules[index] = updated;
     notifyListeners();
     showSnack?.call('색 변경 완료: ${s.title}');
-
-    _persistDelete(s); // 원본 삭제 마킹
-    _persistBlock(updated, state: 'yes', source: 'update-color');
+    try {
+      await _persistDelete(s); // 원본 삭제 마킹
+      await _persistBlock(updated, state: 'yes', source: 'update-color');
+    } catch (e) {
+      showSnack?.call('DB 반영 실패: $e');
+    }
   }
 
   /// Rename a schedule and persist.
-  void renameSchedule(int index, String newTitle) {
+  Future<void> renameSchedule(int index, String newTitle) async {
     if (index < 0 || index >= _schedules.length) {
       showSnack?.call('이름 변경 실패: 잘못된 인덱스');
       return;
@@ -442,65 +475,91 @@ class TimetableViewModel extends ChangeNotifier {
       title: newTitle,
       color: s.color,
     );
+    _schedules = List.of(_schedules);
     _schedules[index] = updated;
     notifyListeners();
     showSnack?.call('이름 변경 완료: ${newTitle}');
-
-    _persistDelete(s); // 원본 삭제 마킹
-    _persistBlock(updated, state: 'yes', source: 'update-title');
+    try {
+      await _persistDelete(s); // 원본 삭제 마킹
+      await _persistBlock(updated, state: 'yes', source: 'update-title');
+    } catch (e) {
+      showSnack?.call('DB 반영 실패: $e');
+    }
   }
 
-  void _persistDelete(ScheduleModel s) {
+  Future<void> _ensureMemberExists(String uid) async {
+    final doc = FirebaseFirestore.instance.collection('members').doc(uid);
+    final snap = await doc.get();
+    if (!snap.exists) {
+      await doc.set({
+        'uid': uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  Future<void> _persistDelete(ScheduleModel s) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       showSnack?.call('로그인되어 있지 않아 로컬에서만 반영되었어요');
       return;
     }
-    final startDT = _dateForDayHour(
-      s.day,
-      s.start.hour,
-      minute: s.start.minute,
-    );
-    final endDT = _dateForDayHour(s.day, s.end.hour, minute: s.end.minute);
-    _store.addMemberBlock(
-      uid: user.uid,
-      start: startDT,
-      end: endDT,
-      title: s.title,
-      colorHex: _colorToHex(s.color),
-      state: 'deleted',
-      source: 'update-replace',
-    );
+    await _ensureMemberExists(user.uid);
+    try {
+      final startDT = _dateForDayHour(
+        s.day,
+        s.start.hour,
+        minute: s.start.minute,
+      );
+      final endDT = _dateForDayHour(s.day, s.end.hour, minute: s.end.minute);
+      await _store.addMemberBlock(
+        uid: user.uid,
+        start: startDT,
+        end: endDT,
+        title: s.title,
+        colorHex: _colorToHex(s.color),
+        state: 'deleted',
+        source: 'update-replace',
+      );
+    } catch (e) {
+      showSnack?.call('DB 삭제 마킹 실패: $e');
+      rethrow;
+    }
   }
 
   /// Best-effort persistence for a single schedule snapshot.
   /// Writes a record with the given state/source; downstream can treat
   /// state == 'deleted' as removal.
-  void _persistBlock(
+  Future<void> _persistBlock(
     ScheduleModel s, {
     required String state,
     required String source,
-  }) {
+  }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       showSnack?.call('로그인되어 있지 않아 로컬에서만 반영되었어요');
       return;
     }
-    // Convert weekday + TimeOfDay to concrete DateTimes in the current week.
-    final startDT = _dateForDayHour(
-      s.day,
-      s.start.hour,
-      minute: s.start.minute,
-    );
-    final endDT = _dateForDayHour(s.day, s.end.hour, minute: s.end.minute);
-    _store.addMemberBlock(
-      uid: user.uid,
-      start: startDT,
-      end: endDT,
-      title: s.title,
-      colorHex: _colorToHex(s.color),
-      state: state,
-      source: source,
-    );
+    await _ensureMemberExists(user.uid);
+    try {
+      final startDT = _dateForDayHour(
+        s.day,
+        s.start.hour,
+        minute: s.start.minute,
+      );
+      final endDT = _dateForDayHour(s.day, s.end.hour, minute: s.end.minute);
+      await _store.addMemberBlock(
+        uid: user.uid,
+        start: startDT,
+        end: endDT,
+        title: s.title,
+        colorHex: _colorToHex(s.color),
+        state: state,
+        source: source,
+      );
+    } catch (e) {
+      showSnack?.call('DB 저장 실패: $e');
+      rethrow;
+    }
   }
 }
