@@ -15,6 +15,22 @@ class ScheduleModel {
     required this.color,
   });
 
+  factory ScheduleModel.fromFirestore(Map<String, dynamic> data) {
+    return ScheduleModel(
+      day: data['day'] ?? 0,
+      start: TimeOfDay(
+        hour: data['startHour'] ?? 0,
+        minute: data['startMinute'] ?? 0,
+      ),
+      end: TimeOfDay(
+        hour: data['endHour'] ?? 0,
+        minute: data['endMinute'] ?? 0,
+      ),
+      title: data['title'] ?? '',
+      color: Color(data['color'] ?? 0xFF90CAF9),
+    );
+  }
+
   ScheduleModel copyWith({
     int? day,
     TimeOfDay? start,

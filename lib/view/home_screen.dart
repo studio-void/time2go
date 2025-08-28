@@ -8,6 +8,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  // Convert a Color to a "#RRGGBB" hex string (drop alpha)
+  String _toHex(Color c) {
+    final v = c.value & 0xFFFFFF;
+    return '#'
+        '${((v >> 16) & 0xFF).toRadixString(16).padLeft(2, '0')}'
+        '${((v >> 8) & 0xFF).toRadixString(16).padLeft(2, '0')}'
+        '${(v & 0xFF).toRadixString(16).padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final MeetStore store = MeetStore(FirebaseFirestore.instance);
@@ -132,7 +141,13 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.calendar_month_rounded),
+                                      Icon(
+                                        Icons.calendar_month_rounded,
+                                        color:
+                                            Time2GoTheme.of(
+                                              context,
+                                            ).foregroundColor,
+                                      ),
 
                                       const SizedBox(width: 8),
 
@@ -191,12 +206,17 @@ class HomeScreen extends StatelessWidget {
                 // 2-1) Ask for display name (and title if creating)
                 final displayNameController = TextEditingController(text: '익명');
                 final titleController = TextEditingController(text: 'Title');
+                final blockColors = Time2GoTheme.light.blockColors;
+                int selectedColorIdx = 0;
 
                 if (!context.mounted) return;
-                final result =
-                    await showDialog<({String displayName, String? title})>(
-                      context: context,
-                      builder: (ctx) {
+                final result = await showDialog<
+                  ({String displayName, String? title, Color color})
+                >(
+                  context: context,
+                  builder: (ctx) {
+                    return StatefulBuilder(
+                      builder: (ctx, setState) {
                         return AlertDialog(
                           backgroundColor: theme.backgroundColor,
                           title: Text(
@@ -225,6 +245,37 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                 ),
                               ],
+                              const SizedBox(height: 16),
+                              const Text('표시 색상 선택'),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 8,
+                                children: List.generate(blockColors.length, (
+                                  i,
+                                ) {
+                                  return GestureDetector(
+                                    onTap:
+                                        () => setState(
+                                          () => selectedColorIdx = i,
+                                        ),
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: blockColors[i],
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color:
+                                              selectedColorIdx == i
+                                                  ? Colors.black
+                                                  : Colors.transparent,
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
                             ],
                           ),
                           actions: [
@@ -244,9 +295,12 @@ class HomeScreen extends StatelessWidget {
                                             ? 'Title'
                                             : titleController.text.trim())
                                         : null;
-                                Navigator.of(
-                                  ctx,
-                                ).pop((displayName: name, title: title));
+                                final color = blockColors[selectedColorIdx];
+                                Navigator.of(ctx).pop((
+                                  displayName: name,
+                                  title: title,
+                                  color: color,
+                                ));
                               },
                               child: const Text('확인'),
                             ),
@@ -254,6 +308,8 @@ class HomeScreen extends StatelessWidget {
                         );
                       },
                     );
+                  },
+                );
 
                 if (result == null) return;
 
@@ -276,6 +332,7 @@ class HomeScreen extends StatelessWidget {
                     rangeStartUtc: rangeStartUtc,
                     uid: uid,
                     displayName: result.displayName,
+                    colorHex: _toHex(result.color),
                   );
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -290,6 +347,7 @@ class HomeScreen extends StatelessWidget {
                     roomId: meetId,
                     uid: uid,
                     displayName: result.displayName,
+                    colorHex: _toHex(result.color),
                   );
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -299,7 +357,10 @@ class HomeScreen extends StatelessWidget {
 
                 // 4) Navigate to meet screen
                 if (!context.mounted) return;
-                Navigator.of(context).pushNamed('/meet', arguments: meetId);
+                Navigator.of(context).pushNamed(
+                  '/meet',
+                  arguments: {'meetId': meetId, 'color': result.color},
+                );
               },
             ),
           ],
