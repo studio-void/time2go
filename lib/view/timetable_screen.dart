@@ -19,9 +19,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
     viewModel.addListener(_onViewModelChanged);
     viewModel.showSnack = (msg) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), duration: Duration(seconds: 1)),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), duration: Duration(seconds: 1)),
+          );
+        }
+      });
     };
     viewModel.loadSchedulesFromDatabase(context);
   }
@@ -49,10 +53,18 @@ class _TimetableScreenState extends State<TimetableScreen> {
         foregroundColor: Time2GoTheme.of(context).foregroundColor,
         title: const Text('Time2Go'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_download),
-            onPressed: () => viewModel.importGoogleCalendar(context),
-          ),
+          if (viewModel.isLoggedIn)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: '로그아웃',
+              onPressed: () => viewModel.logout(),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.cloud_download),
+              tooltip: '구글 캘린더 가져오기',
+              onPressed: () => viewModel.importGoogleCalendar(context),
+            ),
         ],
       ),
       body: Stack(

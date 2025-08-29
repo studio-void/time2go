@@ -109,6 +109,8 @@ class TimetableViewModel extends ChangeNotifier {
     ],
   );
 
+  bool get isLoggedIn => FirebaseAuth.instance.currentUser != null;
+
   Future<GoogleSignInAccount?> ensureGoogleAccount() async {
     GoogleSignInAccount? gUser = googleSignIn.currentUser;
     gUser ??= await googleSignIn.signInSilently();
@@ -130,6 +132,22 @@ class TimetableViewModel extends ChangeNotifier {
       credential,
     );
     return userCred.user;
+  }
+
+  Future<void> logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      // Attempt to sign out Google session as well (non-fatal if not signed in)
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+      showSnack?.call('로그아웃했어요.');
+    } catch (e) {
+      showSnack?.call('로그아웃 실패: $e');
+    } finally {
+      // Rebuild UI to reflect new auth state
+      notifyListeners();
+    }
   }
 
   DateTime _mondayOfThisWeekLocal(DateTime now) {
