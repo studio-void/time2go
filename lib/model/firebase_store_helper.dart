@@ -50,7 +50,7 @@ class Member {
   factory Member.fromSnap(DocumentSnapshot<Map<String, dynamic>> snap) {
     final d = snap.data() ?? {};
     final raw = (d['blocks'] as List?) ?? const [];
-    final roomsRaw = (d['rooms'] as List?) ?? const []; // ✅ 추가
+    final roomsRaw = (d['rooms'] as List?) ?? const [];
     return Member(
       uid: snap.id,
       displayName: (d['displayName'] as String?) ?? '익명',
@@ -62,7 +62,7 @@ class Member {
               .map((e) => Block.fromMap(Map<String, dynamic>.from(e as Map)))
               .toList()
             ..sort((a, b) => a.start.compareTo(b.start)),
-      rooms: roomsRaw.whereType<String>().toList(), // ✅ 추가
+      rooms: roomsRaw.whereType<String>().toList(),
     );
   }
 
@@ -71,7 +71,7 @@ class Member {
     if (colorHex != null) 'color': colorHex,
     'joinedAt': Timestamp.fromDate(joinedAtUtc),
     'blocks': blocks.map((b) => b.toMap()).toList(),
-    if (rooms.isNotEmpty) 'rooms': rooms, // ✅ 추가
+    if (rooms.isNotEmpty) 'rooms': rooms,
   };
 }
 
@@ -190,18 +190,27 @@ class MeetStore {
       'displayName': displayName,
       if (colorHex != null) 'color': colorHex,
       'joinedAt': FieldValue.serverTimestamp(),
-      'rooms': FieldValue.arrayUnion([roomId]), // ✅ 본인 멤버 문서에 rooms 동기화
+      'rooms': FieldValue.arrayUnion([roomId]),
     }, SetOptions(merge: true));
 
-    await roomRef(roomId).set({
-      'members': FieldValue.arrayUnion([
-        {
-          'member': mRef,
-          'displayName': displayName,
-          if (colorHex != null) 'color': colorHex,
-        },
-      ]),
-    }, SetOptions(merge: true)); // ✅ 방 문서의 members 배열에도 추가
+    // members 배열 중복 체크 후 추가
+    final roomSnap = await roomRef(roomId).get();
+    List membersArr = (roomSnap.data()?['members'] as List?) ?? [];
+    final alreadyExists = membersArr.any((e) {
+      final ref = e['member'];
+      return ref is DocumentReference && ref.id == uid;
+    });
+    if (!alreadyExists) {
+      await roomRef(roomId).set({
+        'members': FieldValue.arrayUnion([
+          {
+            'member': mRef,
+            'displayName': displayName,
+            if (colorHex != null) 'color': colorHex,
+          },
+        ]),
+      }, SetOptions(merge: true));
+    }
   }
 
   /// 방이 없으면 생성 후, 멤버로 입장 처리까지 한 번에 수행
@@ -247,15 +256,23 @@ class MeetStore {
     });
     // Ensure creator/joiner is present in room's members array as well
     final mRef = memberRef(uid);
-    await roomRef(roomId).set({
-      'members': FieldValue.arrayUnion([
-        {
-          'member': mRef,
-          'displayName': displayName,
-          if (colorHex != null) 'color': colorHex,
-        },
-      ]),
-    }, SetOptions(merge: true));
+    final roomSnap = await roomRef(roomId).get();
+    List membersArr = (roomSnap.data()?['members'] as List?) ?? [];
+    final alreadyExists = membersArr.any((e) {
+      final ref = e['member'];
+      return ref is DocumentReference && ref.id == uid;
+    });
+    if (!alreadyExists) {
+      await roomRef(roomId).set({
+        'members': FieldValue.arrayUnion([
+          {
+            'member': mRef,
+            'displayName': displayName,
+            if (colorHex != null) 'color': colorHex,
+          },
+        ]),
+      }, SetOptions(merge: true));
+    }
     return (created: created, room: outRoom!);
   }
 

@@ -82,21 +82,22 @@ class MeetViewModel extends ChangeNotifier {
 
         List<ScheduleModel> schedules = [];
         if (memberDoc != null && memberDoc.blocks.isNotEmpty) {
-          schedules =
-              memberDoc.blocks
-                  .map(
-                    (b) => ScheduleModel(
-                      day: b.start.weekday,
-                      start: TimeOfDay(
-                        hour: b.start.hour,
-                        minute: b.start.minute,
-                      ),
-                      end: TimeOfDay(hour: b.end.hour, minute: b.end.minute),
-                      title: b.title,
-                      color: color,
-                    ),
-                  )
-                  .toList();
+          for (final b in memberDoc.blocks) {
+            // 월~금(weekday 1~5)만 가져오기
+            if (b.start.weekday >= DateTime.monday &&
+                b.start.weekday <= DateTime.friday) {
+              final dayIdx = b.start.weekday - 1; // 월=1→0, ... 일=7→6
+              schedules.add(
+                ScheduleModel(
+                  day: dayIdx,
+                  start: TimeOfDay(hour: b.start.hour, minute: b.start.minute),
+                  end: TimeOfDay(hour: b.end.hour, minute: b.end.minute),
+                  title: b.title,
+                  color: color,
+                ),
+              );
+            }
+          }
         }
 
         loadedMembers.add(
@@ -132,6 +133,7 @@ class MeetViewModel extends ChangeNotifier {
     return all;
   }
 
+  // DateTime? rangeStart; // rangeStart is no longer used
   // Optionally: Save merged timetable to Firestore (if needed)
   Future<void> saveMergedTimetable() async {
     // Implement if you want to persist the merged timetable

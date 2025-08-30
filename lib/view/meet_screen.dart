@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:time2go/theme/time2go_theme.dart';
 import 'package:time2go/view/widgets/calendar_grid.dart';
 import 'package:time2go/viewmodel/meet_viewmodel.dart';
@@ -23,7 +24,6 @@ class MeetScreen extends StatelessWidget {
 
     if (meetId == null || myColor == null) {
       debugPrint('meetId=$meetId, myColor=$myColor');
-
       return Scaffold(
         backgroundColor: time2goTheme.backgroundColor,
         appBar: AppBar(
@@ -57,31 +57,55 @@ class MeetScreen extends StatelessWidget {
             );
           };
 
-          return Scaffold(
-            backgroundColor: time2goTheme.backgroundColor,
-            appBar: AppBar(
-              backgroundColor: time2goTheme.backgroundColor,
-              foregroundColor: time2goTheme.foregroundColor,
-              title: Text(meetId ?? '빈 미트'),
-              centerTitle: false,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.people),
-                  tooltip: '멤버 보기',
-                  onPressed: () {
-                    _showMembersSheet(context, vm);
-                  },
-                ),
-              ],
-            ),
-            body:
-                vm.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : CalendarGrid(
-                      schedules: vm.mergedSchedules,
-                      blockColors: blockColors,
-                      gridColor: gridColor,
+          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            future:
+                FirebaseFirestore.instance
+                    .collection('rooms')
+                    .doc(meetId)
+                    .get(),
+            builder: (context, snapshot) {
+              String title = meetId ?? '빈 미트';
+              if (snapshot.hasData && snapshot.data?.data()?['title'] != null) {
+                title = snapshot.data!.data()!['title'] as String;
+              }
+              return Scaffold(
+                backgroundColor: time2goTheme.backgroundColor,
+                appBar: AppBar(
+                  backgroundColor: time2goTheme.backgroundColor,
+                  foregroundColor: time2goTheme.foregroundColor,
+                  title: Text(title),
+                  centerTitle: false,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.people),
+                      tooltip: '멤버 보기',
+                      onPressed: () {
+                        _showMembersSheet(context, vm);
+                      },
                     ),
+                  ],
+                ),
+                body:
+                    vm.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : CalendarGrid(
+                          schedules:
+                              vm.mergedSchedules
+                                  .map(
+                                    (s) => s.copyWith(
+                                      title: '',
+                                      color: s.color.withOpacity(0.5),
+                                    ),
+                                  )
+                                  .toList(),
+                          blockColors:
+                              blockColors
+                                  .map((c) => c.withOpacity(0.5))
+                                  .toList(),
+                          gridColor: gridColor,
+                        ),
+              );
+            },
           );
         },
       ),

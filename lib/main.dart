@@ -35,7 +35,7 @@ class Time2GoApp extends StatelessWidget {
         ),
         extensions: [Time2GoTheme.dark],
       ),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       initialRoute: '/',
       routes: {
         '/': (context) => const HomeScreen(),
