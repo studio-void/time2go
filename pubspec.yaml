@@ -2,7 +2,7 @@ name: time2go
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  provider: ^6.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -37,6 +38,11 @@ dependencies:
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.1
   http: ^1.4.0
+  google_sign_in: ^6.1.5
+  googleapis: ^11.0.0
+  firebase_auth: ^6.0.1
+  firebase_core: ^4.0.0
+  cloud_firestore: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -54,7 +60,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -87,6 +92,12 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/PretendardVariable.ttf
+
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

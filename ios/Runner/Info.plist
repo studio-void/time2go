@@ -49,5 +49,20 @@
 	<array>
 		<string>https</string>
 	</array>
+	<key>GIDClientID</key>
+	<!-- Copied from GoogleService-Info.plist key CLIENT_ID -->
+	<string>339127506038-5mle1fgisjsqosb92ubica89ghaktp4t.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- Copied from GoogleService-Info.plist key REVERSED_CLIENT_ID -->
+				<string>com.googleusercontent.apps.339127506038-5mle1fgisjsqosb92ubica89ghaktp4t</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
